@@ -25,7 +25,8 @@ from zkclient import ZKClient, CountingWatcher, zookeeper
 usage = "usage: %prog [options]"
 parser = OptionParser(usage=usage)
 parser.add_option("", "--servers", dest="servers",
-                  default="localhost:2181", help="comma separated list of host:port (default %default), test each in turn")
+                  default="localhost:2181",
+                  help="comma separated list of host:port (default %default), test each in turn")
 parser.add_option("", "--cluster", dest="cluster",
                   default=None, help="comma separated list of host:port, test as a cluster, alternative to --servers")
 parser.add_option("", "--config",
@@ -34,7 +35,8 @@ parser.add_option("", "--config",
 parser.add_option("", "--timeout", dest="timeout", type="int",
                   default=5000, help="session timeout in milliseconds (default %default)")
 parser.add_option("", "--root_znode", dest="root_znode",
-                  default="/zk-latencies", help="root for the test, will be created as part of test (default /zk-latencies)")
+                  default="/zk-latencies",
+                  help="root for the test, will be created as part of test (default /zk-latencies)")
 parser.add_option("", "--znode_size", dest="znode_size", type="int",
                   default=25, help="data size when creating/setting znodes (default %default)")
 parser.add_option("", "--znode_count", dest="znode_count", default=10000, type="int",
@@ -61,21 +63,25 @@ parser.add_option("-q", "--quiet",
 
 zkclient.options = options
 
-zookeeper.set_log_stream(open("cli_log_%d.txt" % (os.getpid()),"w"))
+zookeeper.set_log_stream(open("cli_log_%d.txt" % (os.getpid()), "w"))
+
 
 class SmokeError(Exception):
     def __init__(self, value):
         self.value = value
+
     def __str__(self):
         return repr(self.value)
+
 
 def print_elap(start, msg, count):
     elapms = (time.time() - start) * 1000
     if int(elapms) != 0:
         print("%s in %6d ms (%f ms/op %f/sec)"
-              % (msg, int(elapms), elapms/count, count/(elapms/1000.0)))
+              % (msg, int(elapms), elapms / count, count / (elapms / 1000.0)))
     else:
         print("%s in %6d ms (included in prior)" % (msg, int(elapms)))
+
 
 def timer(ops, msg, count=options.znode_count):
     start = time.time()
@@ -83,13 +89,16 @@ def timer(ops, msg, count=options.znode_count):
         pass
     print_elap(start, msg, count)
 
+
 def timer2(func, msg, count=options.znode_count):
     start = time.time()
     func()
     print_elap(start, msg, count)
 
+
 def child_path(i):
     return "%s/session_%d" % (options.root_znode, i)
+
 
 def synchronous_latency_test(s, data):
     # create znode_count znodes (perm)
@@ -119,9 +128,11 @@ def synchronous_latency_test(s, data):
 
     # watch znode_count znodes
     watches = [CountingWatcher() for x in xrange(options.watch_multiple)]
+
     def watch(j):
         for watch in watches:
             s.exists(child_path(j), watch)
+
     timer((watch(j) for j in xrange(options.znode_count)),
           "watched %7d           znodes " %
           (options.watch_multiple * options.znode_count),
@@ -141,6 +152,7 @@ def synchronous_latency_test(s, data):
                "notif   %7d           watches" % (options.watch_multiple * options.znode_count),
                (options.watch_multiple * options.znode_count))
 
+
 def asynchronous_latency_test(s, data):
     # create znode_count znodes (perm)
     def func():
@@ -157,7 +169,7 @@ def asynchronous_latency_test(s, data):
                 raise SmokeError("invalid path %s for operation %d on handle %d" %
                                  (cb.path, j, cb.handle))
 
-    timer2(func, "created %7d permanent znodes " % (options.znode_count))
+    timer2(func, "created %7d permanent znodes " % options.znode_count)
 
     # set znode_count znodes
     def func():
@@ -171,7 +183,7 @@ def asynchronous_latency_test(s, data):
         for cb in callbacks:
             cb.waitForSuccess()
 
-    timer2(func, "set     %7d           znodes " % (options.znode_count))
+    timer2(func, "set     %7d           znodes " % options.znode_count)
 
     # get znode_count znodes
     def func():
@@ -188,8 +200,40 @@ def asynchronous_latency_test(s, data):
                 raise SmokeError("invalid data %s for operation %d on handle %d" %
                                  (cb.value, j, cb.handle))
 
-    timer2(func, "get     %7d           znodes " % (options.znode_count))
+    timer2(func, "get     %7d           znodes " % options.znode_count)
 
+    ZOO_DIGEST_ACL = {"perms": 0x1f, "scheme": "digest", "id": "user:Zk618le0oFzcUCFbcu8kY43JV78="}
+
+    # setACL znode_count znodes
+    def func():
+        callbacks = []
+        for j in xrange(options.znode_count):
+            cb = zkclient.DeleteCallback()
+            cb.cv.acquire()
+            s.aset_acl(child_path(j), cb, [ZOO_DIGEST_ACL])
+            callbacks.append(cb)
+
+        for cb in callbacks:
+            cb.waitForSuccess()
+
+    timer2(func, "setACL  %7d           znodes " % options.znode_count)
+
+    # getACL znode_count znodes
+    def func():
+        callbacks = []
+        for j in xrange(options.znode_count):
+            cb = zkclient.GetCallback()
+            cb.cv.acquire()
+            s.aget_acl(child_path(j), cb)
+            callbacks.append(cb)
+
+        for j, cb in enumerate(callbacks):
+            cb.waitForSuccess()
+            if len(cb.value) != 1:
+                raise SmokeError("invalid ACL %s for operation %d on handle %d" %
+                                 (cb.value, j, cb.handle))
+
+    timer2(func, "getACL  %7d           znodes " % options.znode_count)
 
     # delete znode_count znodes (perm)
     def func():
@@ -203,7 +247,7 @@ def asynchronous_latency_test(s, data):
         for cb in callbacks:
             cb.waitForSuccess()
 
-    timer2(func, "deleted %7d permanent znodes " % (options.znode_count))
+    timer2(func, "deleted %7d permanent znodes " % options.znode_count)
 
     # create znode_count znodes (ephemeral)
     def func():
@@ -220,7 +264,7 @@ def asynchronous_latency_test(s, data):
                 raise SmokeError("invalid path %s for operation %d on handle %d" %
                                  (cb.path, j, cb.handle))
 
-    timer2(func, "created %7d ephemeral znodes " % (options.znode_count))
+    timer2(func, "created %7d ephemeral znodes " % options.znode_count)
 
     watches = [CountingWatcher() for x in xrange(options.watch_multiple)]
 
@@ -253,21 +297,23 @@ def asynchronous_latency_test(s, data):
         for cb in callbacks:
             cb.waitForSuccess()
 
-    timer2(func, "deleted %7d ephemeral znodes " % (options.znode_count))
+    timer2(func, "deleted %7d ephemeral znodes " % options.znode_count)
 
     start = time.time()
     for watch in watches:
         if watch.waitForExpected(options.znode_count, 60000) != options.znode_count:
-            raise SmokeError("wrong number of watches: %d" %
-                             (watch.count))
+            raise SmokeError("wrong number of watches: %d" % watch.count)
+
     print_elap(start,
                "notif   %7d           watches" % (options.watch_multiple * options.znode_count),
                (options.watch_multiple * options.znode_count))
+
 
 def read_zk_config(filename):
     with open(filename) as f:
         config = dict(tuple(line.rstrip().split('=', 1)) for line in f if line.rstrip())
         return config
+
 
 def get_zk_servers(filename):
     if options.cluster:
@@ -276,9 +322,10 @@ def get_zk_servers(filename):
         config = read_zk_config(options.configfile)
         client_port = config['clientPort']
         return [",".join("%s:%s" % (v.split(':', 1)[0], client_port)
-                        for k, v in config.items() if k.startswith('server.'))]
+                         for k, v in config.items() if k.startswith('server.'))]
     else:
         return options.servers.split(",")
+
 
 if __name__ == '__main__':
     data = options.znode_size * "x"
@@ -308,7 +355,7 @@ if __name__ == '__main__':
 
     for i, s in enumerate(sessions):
         if options.synchronous:
-            type = "syncronous" 
+            type = "syncronous"
         else:
             type = "asynchronous"
         print("Testing latencies on server %s using %s calls" %

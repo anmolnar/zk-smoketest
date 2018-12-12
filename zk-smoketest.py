@@ -42,28 +42,34 @@ parser.add_option("-q", "--quiet",
 
 zkclient.options = options
 
-zookeeper.set_log_stream(open("cli_log_%d.txt" % (os.getpid()),"w"))
+zookeeper.set_log_stream(open("cli_log_%d.txt" % (os.getpid()), "w"))
+
 
 class SmokeError(Exception):
     def __init__(self, value):
         self.value = value
+
     def __str__(self):
         return repr(self.value)
 
 
 def read_zk_config(filename):
+    if options.verbose:
+        print("Opening Zk config file: %s" % filename)
     with open(filename) as f:
         config = dict(tuple(line.rstrip().split('=', 1)) for line in f if line.rstrip())
         return config
+
 
 def get_zk_servers(filename):
     if filename:
         config = read_zk_config(options.configfile)
         client_port = config['clientPort']
         return ["%s:%s" % (v.split(':', 1)[0], client_port)
-                        for k, v in config.items() if k.startswith('server.')]
+                for k, v in config.items() if k.startswith('server.')]
     else:
         return options.servers.split(",")
+
 
 if __name__ == '__main__':
     servers = get_zk_servers(options.configfile)
@@ -83,7 +89,7 @@ if __name__ == '__main__':
 
     if zk.exists(rootpath):
         if not options.quiet:
-            print("Node %s already exists, attempting reuse" % (rootpath))
+            print("Node %s already exists, attempting reuse" % rootpath)
     else:
         zk.create(rootpath,
                   "smoketest root, delete after test done, created %s" %
@@ -98,8 +104,10 @@ if __name__ == '__main__':
 
     zk.close()
 
+
     def child_path(i):
         return "%s/session_%d" % (rootpath, i)
+
 
     # create znodes, one znode per session (client), one session per server
     for i, server in enumerate(servers):

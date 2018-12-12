@@ -18,26 +18,29 @@ import zookeeper, time, threading
 
 DEFAULT_TIMEOUT = 30000
 
-ZOO_OPEN_ACL_UNSAFE = {"perms":0x1f, "scheme":"world", "id" :"anyone"}
+ZOO_OPEN_ACL_UNSAFE = {"perms": 0x1f, "scheme": "world", "id": "anyone"}
+
 
 class ZKClientError(Exception):
     def __init__(self, value):
         self.value = value
+
     def __str__(self):
         return repr(self.value)
+
 
 class ZKClient(object):
     def __init__(self, servers, timeout=DEFAULT_TIMEOUT):
         self.timeout = timeout
         self.connected = False
-        self.conn_cv = threading.Condition( )
+        self.conn_cv = threading.Condition()
         self.handle = -1
 
         self.conn_cv.acquire()
         if not options.quiet: print("Connecting to %s" % (servers))
         start = time.time()
         self.handle = zookeeper.init(servers, self.connection_watcher, timeout)
-        self.conn_cv.wait(timeout/1000)
+        self.conn_cv.wait(timeout / 1000)
         self.conn_cv.release()
 
         if not self.connected:
@@ -56,7 +59,7 @@ class ZKClient(object):
 
     def close(self):
         return zookeeper.close(self.handle)
-    
+
     def create(self, path, data="", flags=0, acl=[ZOO_OPEN_ACL_UNSAFE]):
         start = time.time()
         result = zookeeper.create(self.handle, path, data, acl, flags)
@@ -66,12 +69,16 @@ class ZKClient(object):
         return result
 
     def delete(self, path, version=-1):
-        start = time.time()
-        result = zookeeper.delete(self.handle, path, version)
-        if options.verbose:
-            print("Node %s deleted in %d ms"
-                  % (path, int((time.time() - start) * 1000)))
-        return result
+        try:
+            start = time.time()
+            result = zookeeper.delete(self.handle, path, version)
+            if options.verbose:
+                print("Node %s deleted in %d ms"
+                      % (path, int((time.time() - start) * 1000)))
+            return result
+        except zookeeper.SystemErrorException:
+            print("zhandle state: %s" % self.state())
+            raise
 
     def get(self, path, watcher=None):
         return zookeeper.get(self.handle, path, watcher)
@@ -85,11 +92,10 @@ class ZKClient(object):
     def set2(self, path, data="", version=-1):
         return zookeeper.set2(self.handle, path, data, version)
 
-
     def get_children(self, path, watcher=None):
         return zookeeper.get_children(self.handle, path, watcher)
 
-    def async(self, path = "/"):
+    def async(self, path="/"):
         return zookeeper.async(self.handle, path)
 
     def acreate(self, path, callback, data="", flags=0, acl=[ZOO_OPEN_ACL_UNSAFE]):
@@ -108,9 +114,21 @@ class ZKClient(object):
     def aset(self, path, callback, data="", version=-1):
         return zookeeper.aset(self.handle, path, data, version, callback)
 
+    def aset_acl(self, path, callback, acl, version=-1):
+        return zookeeper.aset_acl(self.handle, path, version, acl, callback)
+
+    def aget_acl(self, path, callback):
+        return zookeeper.aget_acl(self.handle, path, callback)
+
+    def state(self):
+        return zookeeper.state(self.handle)
+
+
 watch_count = 0
 
 """Callable watcher that counts the number of notifications"""
+
+
 class CountingWatcher(object):
     def __init__(self):
         self.count = 0
@@ -130,7 +148,7 @@ class CountingWatcher(object):
         while (waited < maxwait):
             if self.count >= count:
                 return self.count
-            time.sleep(1.0);
+            time.sleep(1.0)
             waited += 1000
         return self.count
 
@@ -140,8 +158,11 @@ class CountingWatcher(object):
             print("handle %d got watch for %s in watcher %d, count %d" %
                   (handle, path, self.id, self.count))
 
+
 """Callable watcher that counts the number of notifications
 and verifies that the paths are sequential"""
+
+
 class SequentialCountingWatcher(CountingWatcher):
     def __init__(self, child_path):
         CountingWatcher.__init__(self)
@@ -151,6 +172,7 @@ class SequentialCountingWatcher(CountingWatcher):
         if not self.child_path(self.count) == path:
             raise ZKClientError("handle %d invalid path order %s" % (handle, path))
         CountingWatcher.__call__(self, handle, typ, state, path)
+
 
 class Callback(object):
     def __init__(self):
@@ -174,7 +196,7 @@ class Callback(object):
 
         if not self.callback_flag == True:
             raise ZKClientError("asynchronous operation timed out on handle %d" %
-                             (self.handle))
+                                (self.handle))
         if not self.rc == zookeeper.OK:
             raise ZKClientError(
                 "asynchronous operation failed on handle %d with rc %d" %
@@ -189,7 +211,9 @@ class GetCallback(Callback):
         def handler():
             self.value = value
             self.stat = stat
+
         self.callback(handle, rc, handler)
+
 
 class SetCallback(Callback):
     def __init__(self):
@@ -198,10 +222,13 @@ class SetCallback(Callback):
     def __call__(self, handle, rc, stat):
         def handler():
             self.stat = stat
+
         self.callback(handle, rc, handler)
+
 
 class ExistsCallback(SetCallback):
     pass
+
 
 class CreateCallback(Callback):
     def __init__(self):
@@ -210,7 +237,9 @@ class CreateCallback(Callback):
     def __call__(self, handle, rc, path):
         def handler():
             self.path = path
+
         self.callback(handle, rc, handler)
+
 
 class DeleteCallback(Callback):
     def __init__(self):
@@ -219,4 +248,5 @@ class DeleteCallback(Callback):
     def __call__(self, handle, rc):
         def handler():
             pass
+
         self.callback(handle, rc, handler)
