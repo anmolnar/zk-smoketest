@@ -202,7 +202,7 @@ def asynchronous_latency_test(s, data):
 
     timer2(func, "get     %7d           znodes " % options.znode_count)
 
-    ZOO_DIGEST_ACL = {"perms": 0x1f, "scheme": "digest", "id": "user:Zk618le0oFzcUCFbcu8kY43JV78="}
+    ZOO_DIGEST_ACL = {"perms": 0x1f, "scheme": "digest", "id": "user:4lo4uMGZQ30s/j5PQ77K8w9AFWs="}
 
     # setACL znode_count znodes
     def func():
@@ -221,6 +221,10 @@ def asynchronous_latency_test(s, data):
     # getACL znode_count znodes
     def func():
         callbacks = []
+        cb = zkclient.DeleteCallback()
+        cb.cv.acquire()
+        s.add_auth("digest", "user:andor", cb)
+        cb.waitForSuccess()
         for j in xrange(options.znode_count):
             cb = zkclient.GetCallback()
             cb.cv.acquire()

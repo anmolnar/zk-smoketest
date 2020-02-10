@@ -120,9 +120,11 @@ class ZKClient(object):
     def aget_acl(self, path, callback):
         return zookeeper.aget_acl(self.handle, path, callback)
 
+    def add_auth(self, scheme, data, callback):
+        return zookeeper.add_auth(self.handle, scheme, data, callback)
+
     def state(self):
         return zookeeper.state(self.handle)
-
 
 watch_count = 0
 
