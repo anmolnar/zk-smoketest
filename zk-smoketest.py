@@ -112,7 +112,7 @@ if __name__ == '__main__':
     # create znodes, one znode per session (client), one session per server
     for i, server in enumerate(servers):
         # ensure this server is up to date with leader
-        sessions[i].async()
+        sessions[i].async_()
 
         ## create child znode
         sessions[i].create(child_path(i), "", zookeeper.EPHEMERAL)
@@ -120,7 +120,7 @@ if __name__ == '__main__':
     watchers = []
     for i, server in enumerate(servers):
         # ensure this server is up to date with leader
-        sessions[i].async()
+        sessions[i].async_()
 
         children = sessions[i].get_children(rootpath)
         if len(children) != len(sessions):
@@ -138,7 +138,7 @@ if __name__ == '__main__':
     # check all watches fired
     for i, watcher in enumerate(watchers):
         # ensure this server is up to date with leader
-        sessions[i].async()
+        sessions[i].async_()
         if watcher.waitForExpected(len(sessions), options.timeout) != len(sessions):
             raise SmokeError("server %s wrong number of watches: %d" %
                              (server, watcher.count))
@@ -151,7 +151,7 @@ if __name__ == '__main__':
     # cleanup root node
     zk = ZKClient(servers[-1], options.timeout)
     # ensure this server is up to date with leader (ephems)
-    zk.async()
+    zk.async_()
     zk.delete(rootpath)
 
     zk.close()
