@@ -1,8 +1,8 @@
-FROM maven:3.8.4-jdk-11
+FROM debian:11
 
-RUN apt-get update
-RUN apt-get install -y \
-   g++ \
+RUN apt update
+RUN apt install -y build-essential
+RUN apt install -y \
    cmake \
    autoconf \
    pkg-config \
@@ -13,14 +13,17 @@ RUN apt-get install -y \
    libsasl2-modules-gssapi-mit \
    libsasl2-modules \
    libsasl2-dev \
-   ant
-
-RUN apt-get install -y wget unzip gcc vim
-RUN apt-get install -y python3-pip python-is-python3
+   wget \
+   unzip \
+   vim
+RUN apt install -y maven ant
+RUN apt install -y python3-pip python-is-python3
 
 RUN wget https://github.com/anmolnar/zk-smoketest/archive/master.zip -O zk-smoketest.zip; \
     unzip zk-smoketest.zip; \
     rm zk-smoketest.zip
 
 EXPOSE 2181
+
+ENTRYPOINT [ "/bin/bash" ]
 
