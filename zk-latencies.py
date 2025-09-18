@@ -103,44 +103,44 @@ def child_path(i):
 def synchronous_latency_test(s, data):
     # create znode_count znodes (perm)
     timer((s.create(child_path(j), data)
-           for j in xrange(options.znode_count)),
+           for j in range(options.znode_count)),
           "created %7d permanent znodes " % (options.znode_count))
 
     # set znode_count znodes
     timer((s.set(child_path(j), data)
-           for j in xrange(options.znode_count)),
+           for j in range(options.znode_count)),
           "set     %7d           znodes " % (options.znode_count))
 
     # get znode_count znodes
     timer((s.get(child_path(j))
-           for j in xrange(options.znode_count)),
+           for j in range(options.znode_count)),
           "get     %7d           znodes " % (options.znode_count))
 
     # delete znode_count znodes
     timer((s.delete(child_path(j))
-           for j in xrange(options.znode_count)),
+           for j in range(options.znode_count)),
           "deleted %7d permanent znodes " % (options.znode_count))
 
     # create znode_count znodes (ephemeral)
     timer((s.create(child_path(j), data, zookeeper.EPHEMERAL)
-           for j in xrange(options.znode_count)),
+           for j in range(options.znode_count)),
           "created %7d ephemeral znodes " % (options.znode_count))
 
     # watch znode_count znodes
-    watches = [CountingWatcher() for x in xrange(options.watch_multiple)]
+    watches = [CountingWatcher() for x in range(options.watch_multiple)]
 
     def watch(j):
         for watch in watches:
             s.exists(child_path(j), watch)
 
-    timer((watch(j) for j in xrange(options.znode_count)),
+    timer((watch(j) for j in range(options.znode_count)),
           "watched %7d           znodes " %
           (options.watch_multiple * options.znode_count),
           options.watch_multiple * options.znode_count)
 
     # # delete znode_count znodes
     timer((s.delete(child_path(j))
-           for j in xrange(options.znode_count)),
+           for j in range(options.znode_count)),
           "deleted %7d ephemeral znodes " % (options.znode_count))
 
     start = time.time()
@@ -157,7 +157,7 @@ def asynchronous_latency_test(s, data):
     # create znode_count znodes (perm)
     def func():
         callbacks = []
-        for j in xrange(options.znode_count):
+        for j in range(options.znode_count):
             cb = zkclient.CreateCallback()
             cb.cv.acquire()
             s.acreate(child_path(j), cb, data)
@@ -174,7 +174,7 @@ def asynchronous_latency_test(s, data):
     # set znode_count znodes
     def func():
         callbacks = []
-        for j in xrange(options.znode_count):
+        for j in range(options.znode_count):
             cb = zkclient.SetCallback()
             cb.cv.acquire()
             s.aset(child_path(j), cb, data)
@@ -188,7 +188,7 @@ def asynchronous_latency_test(s, data):
     # get znode_count znodes
     def func():
         callbacks = []
-        for j in xrange(options.znode_count):
+        for j in range(options.znode_count):
             cb = zkclient.GetCallback()
             cb.cv.acquire()
             s.aget(child_path(j), cb)
@@ -207,7 +207,7 @@ def asynchronous_latency_test(s, data):
     # setACL znode_count znodes
     def func():
         callbacks = []
-        for j in xrange(options.znode_count):
+        for j in range(options.znode_count):
             cb = zkclient.DeleteCallback()
             cb.cv.acquire()
             s.aset_acl(child_path(j), cb, [ZOO_DIGEST_ACL])
@@ -225,7 +225,7 @@ def asynchronous_latency_test(s, data):
         cb.cv.acquire()
         s.add_auth("digest", "user:andor", cb)
         cb.waitForSuccess()
-        for j in xrange(options.znode_count):
+        for j in range(options.znode_count):
             cb = zkclient.GetCallback()
             cb.cv.acquire()
             s.aget_acl(child_path(j), cb)
@@ -242,7 +242,7 @@ def asynchronous_latency_test(s, data):
     # delete znode_count znodes (perm)
     def func():
         callbacks = []
-        for j in xrange(options.znode_count):
+        for j in range(options.znode_count):
             cb = zkclient.DeleteCallback()
             cb.cv.acquire()
             s.adelete(child_path(j), cb)
@@ -256,7 +256,7 @@ def asynchronous_latency_test(s, data):
     # create znode_count znodes (ephemeral)
     def func():
         callbacks = []
-        for j in xrange(options.znode_count):
+        for j in range(options.znode_count):
             cb = zkclient.CreateCallback()
             cb.cv.acquire()
             s.acreate(child_path(j), cb, data, zookeeper.EPHEMERAL)
@@ -270,13 +270,13 @@ def asynchronous_latency_test(s, data):
 
     timer2(func, "created %7d ephemeral znodes " % options.znode_count)
 
-    watches = [CountingWatcher() for x in xrange(options.watch_multiple)]
+    watches = [CountingWatcher() for x in range(options.watch_multiple)]
 
     # watched znode_count znodes
     def func():
         callbacks = []
         for watch in watches:
-            for j in xrange(options.znode_count):
+            for j in range(options.znode_count):
                 cb = zkclient.ExistsCallback()
                 cb.cv.acquire()
                 s.aexists(child_path(j), cb, watch)
@@ -292,7 +292,7 @@ def asynchronous_latency_test(s, data):
     # delete znode_count znodes (ephemeral)
     def func():
         callbacks = []
-        for j in xrange(options.znode_count):
+        for j in range(options.znode_count):
             cb = zkclient.DeleteCallback()
             cb.cv.acquire()
             s.adelete(child_path(j), cb)
