@@ -1,7 +1,7 @@
 #!/bin/bash
 
 IMAGE_NAME=andor/zktest
-ZOOKEEPER_ROOT=/Users/andor/tmp/apache-zookeeper-3.8.5
+ZOOKEEPER_ROOT=/Users/andor/tmp/apache-zookeeper-3.8.6
 
 echo "Building Docker image: ${IMAGE_NAME}"
 docker build --rm=true -t "${IMAGE_NAME}" ./

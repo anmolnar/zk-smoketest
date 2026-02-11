@@ -15,13 +15,17 @@ RUN apt install -y \
    libsasl2-dev \
    wget \
    unzip \
+   less \
+   telnet \
    vim
-RUN apt install -y maven ant
+RUN apt install -y maven ant default-jdk
 RUN apt install -y python3-pip python-is-python3
 
 RUN wget https://github.com/anmolnar/zk-smoketest/archive/master.zip -O zk-smoketest.zip; \
     unzip zk-smoketest.zip; \
     rm zk-smoketest.zip
+
+ENV JAVA_HOME="/usr/lib/jvm/default-java"
 
 EXPOSE 2181
 
