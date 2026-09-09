@@ -1,8 +1,8 @@
-FROM debian:11
+FROM debian:13
 
-RUN apt update
-RUN apt install -y build-essential
-RUN apt install -y \
+RUN apt-get update
+RUN apt-get install -y build-essential
+RUN apt-get install -y \
    cmake \
    autoconf \
    pkg-config \
@@ -18,8 +18,8 @@ RUN apt install -y \
    less \
    telnet \
    vim
-RUN apt install -y maven ant default-jdk
-RUN apt install -y python3-pip python-is-python3
+RUN apt-get install -y maven ant default-jdk
+RUN apt-get install -y python3-pip python-is-python3 python3-setuptools
 
 RUN wget https://github.com/anmolnar/zk-smoketest/archive/master.zip -O zk-smoketest.zip; \
     unzip zk-smoketest.zip; \
