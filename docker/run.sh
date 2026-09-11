@@ -5,7 +5,7 @@ set -e -x -u
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 IMAGE_NAME=andor/zktest
-ZOOKEEPER_ROOT=/Users/andor/tmp/apache-zookeeper-3.9.6
+ZOOKEEPER_ROOT=/Users/andor/tmp/apache-zookeeper-3.8.7
 
 pushd "$SCRIPT_DIR"
 
